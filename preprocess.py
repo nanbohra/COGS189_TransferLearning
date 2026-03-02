@@ -69,13 +69,15 @@ def load_subject(subject_id, data_dir="./raw_data"):
     return X, y, combined.info
 
 if __name__ == "__main__":
+    # INITIALIZE ARGUMENTS/VARS FROM CALL
     parser = argparse.ArgumentParser()
     parser.add_argument("--n_subjects", type=int, default=50)
     parser.add_argument("--held_out_subject", type=int, default=None)
     parser.add_argument("--csp_components", type=int, default=4)
-    parser.add_argument("--alignment", type=str, default="euclidean")
+    parser.add_argument("--alignment", type=str, default=None)
     args = parser.parse_args()
 
+    # set vars
     n_subjects = args.n_subjects
     held_out_subject = args.held_out_subject if args.held_out_subject is not None else n_subjects
     csp_components = args.csp_components
@@ -84,14 +86,15 @@ if __name__ == "__main__":
         "euclidean": euclidean_alignment,
         # add rest of methods here, make sure to import them above
     }
-    if args.alignment not in alignment_methods:
-        raise ValueError(f"unknown alignment method!")
-    alignment_function = alignment_methods[args.alignment]
+    if args.alignment is not None and args.alignment not in alignment_methods:
+        raise ValueError(f"unknown alignment method! alignment methods: {list(alignment_methods.keys())}")
+    alignment_function = alignment_methods.get(args.alignment)
 
 
+    # LOADING DATA
     all_X = {}
     all_y = {}
-    
+
     for subject_id in range(1, n_subjects + 1):
         # apply preproc function to all subjects
         X, y, info = load_subject(subject_id)
@@ -110,9 +113,11 @@ if __name__ == "__main__":
         # display shape of data + # epochs of left/right fist
         print(f"Subject {subject_str}: {X.shape}, left fist: {left_count}, right fist: {right_count}")
 
-    # apply EA to all subjects
-    for subject_id in range(1, n_subjects + 1):
-        all_X[subject_id] = alignment_function(all_X[subject_id])
+
+    # APPLYING ALIGNMENT IF NEEDED
+    if alignment_function is not None:
+        for subject_id in range(1, n_subjects + 1):
+            all_X[subject_id] = alignment_function(all_X[subject_id])
 
     # fit CSP on train subjects (1-49) only
     train_X = np.concatenate([all_X[i] for i in range(1, n_subjects)], axis=0)
@@ -127,9 +132,10 @@ if __name__ == "__main__":
     fig.savefig("plots/csp_filters.png", dpi=150, bbox_inches='tight')
 
 
-    # save per-subject CSP features
+    # SAVING DATA
     os.makedirs("processed_data", exist_ok=True)
     
+    # save per-subject CSP features    
     for subject_id in range(1, n_subjects + 1):
         # apply CSP to all subjects
         X_csp = csp.transform(all_X[subject_id])
