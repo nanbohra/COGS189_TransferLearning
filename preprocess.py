@@ -2,7 +2,7 @@
 import pandas as pd
 import numpy as np
 import mne
-from mne.decoding import CSP
+from mne.decoding import CSP, get_spatial_filter_from_estimator
 
 import argparse
 import os
@@ -27,6 +27,19 @@ def load_subject(subject_id, data_dir="./raw_data"):
         
         # extract channels we want (central + frontal electrodes)
         raw.pick(['Fc3.', 'Fcz.', 'Fc4.', 'C5..', 'C3..', 'C1..', 'Cz..', 'C2..', 'C4..', 'C6..'])
+
+        # rename electrode channels to standard
+        rename = {
+            'Fc3.': 'FC3', 'Fcz.': 'FCz', 'Fc4.': 'FC4',
+            'C5..': 'C5',  'C3..': 'C3',  'C1..': 'C1',
+            'Cz..': 'Cz',  'C2..': 'C2',  'C4..': 'C4',
+            'C6..': 'C6'
+        }
+        raw.rename_channels(rename)
+        
+        # set standard montage manually
+        montage = mne.channels.make_standard_montage('standard_1005')
+        raw.set_montage(montage, match_case=False, on_missing='ignore')
         
         # bandpass filter 8-30 Hz to capture motor imagery (mu + beta rhythms)
         # IIR filters forward-backward via filtfilt()
@@ -53,7 +66,7 @@ def load_subject(subject_id, data_dir="./raw_data"):
     # extract labels: 1 if T1 (left fist), 0 if T2 (right fist); event codes: 2 -> T1, 3 -> T2
     y = (combined.events[:, -1] == 2).astype(int)
     
-    return X, y
+    return X, y, combined.info
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -81,9 +94,13 @@ if __name__ == "__main__":
     
     for subject_id in range(1, n_subjects + 1):
         # apply preproc function to all subjects
-        X, y = load_subject(subject_id)
+        X, y, info = load_subject(subject_id)
         all_X[subject_id] = X
         all_y[subject_id] = y
+
+        # save once
+        if subject_id == 1:
+            eeg_info = info
         
         # set vars
         subject_str = str(subject_id).zfill(3)
@@ -104,6 +121,10 @@ if __name__ == "__main__":
     # fit CSP
     csp = CSP(n_components=csp_components, log=True)
     csp.fit(train_X, train_y)
+
+    os.makedirs("plots", exist_ok=True)
+    fig = get_spatial_filter_from_estimator(csp, info=eeg_info).plot_filters(components=list(range(csp_components)), show=False)
+    fig.savefig("plots/csp_filters.png", dpi=150, bbox_inches='tight')
 
 
     # save per-subject CSP features
