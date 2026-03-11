@@ -25,7 +25,7 @@ File: `preprocess.py`
 File: `alignment_methods.py`
 
 * Euclidean Alignment: normalizes each subject's epoch covariance to a common reference by applying the inverse square root of the mean covariance matrix
-* Riemannian Alignment: TODO
+* Riemannian Alignment: normalizes each subject's epoch covariance using the Riemannian (geometric) mean of covariance matrices, then applies its inverse square root — geometrically correct for SPD matrices and typically improves cross-subject generalization
 * Shared Response Model: TODO
 
 
@@ -56,5 +56,5 @@ python preprocess.py
 ```
 For custom arguments, follow this format:
 ```
-python preprocess.py --n_subjects 50 --held_out_subject 50 --csp_components 4 --alignment euclidean
+python preprocess.py --n_subjects 50 --held_out_subject 50 --csp_components 4 --alignment euclidean --alignment riemannian
 ```
