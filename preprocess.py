@@ -9,7 +9,7 @@ import os
 import warnings
 warnings.filterwarnings("ignore")
 
-from alignment_methods import euclidean_alignment
+from alignment_methods import euclidean_alignment, riemannian_alignment
 
 # preprocessing EEG data
 def load_subject(subject_id, data_dir="./raw_data", use_all_channels=False):
@@ -91,7 +91,7 @@ if __name__ == "__main__":
     
     alignment_methods = {
         "euclidean": euclidean_alignment,
-        # add rest of methods here, make sure to import them above
+        "riemannian": riemannian_alignment,
     }
     if args.alignment is not None and args.alignment not in alignment_methods:
         raise ValueError(f"unknown alignment method! alignment methods: {list(alignment_methods.keys())}")
