@@ -2,7 +2,7 @@ import numpy as np
 from scipy.linalg import sqrtm
 from pyriemann.utils.mean import mean_riemann
 from pyriemann.utils.base import invsqrtm
-from brainiak.fcma.srm import SRM
+from brainiak.funcalign.srm import SRM
 
 
 def euclidean_alignment(X):
