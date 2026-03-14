@@ -1,8 +1,43 @@
 import numpy as np
-from scipy.linalg import sqrtm
+from scipy.linalg import sqrtm, svd
 from pyriemann.utils.mean import mean_riemann
 from pyriemann.utils.base import invsqrtm
-from brainiak.funcalign.srm import SRM
+
+
+class SRM:
+    """
+    Lightweight SRM — mirrors brainiak.funcalign.srm.SRM API.
+    """
+
+    def __init__(self, n_iter=10, features=20):
+        self.n_iter = n_iter
+        self.features = features
+        self.w_ = None  # list of (n_ch, n_features) orthogonal bases
+
+    def fit(self, X_list):
+        n_subjects = len(X_list)
+        k = self.features
+
+        # initialise W via SVD of each subject
+        self.w_ = []
+        for X in X_list:
+            U, _, Vt = svd(X, full_matrices=False)
+            self.w_.append(U[:, :k])
+
+        for _ in range(self.n_iter):
+            # shared response
+            S = sum(W.T @ X for W, X in zip(self.w_, X_list)) / n_subjects
+            # update W matrices
+            self.w_ = []
+            for X in X_list:
+                M = X @ S.T
+                U, _, Vt = svd(M, full_matrices=False)
+                self.w_.append(U @ Vt)
+
+        return self
+
+    def transform(self, X_list):
+        return [W.T @ X for W, X in zip(self.w_, X_list)]
 
 
 def euclidean_alignment(X):
@@ -75,17 +110,10 @@ def srm_alignment(X_list, n_features=20):
 
     Returns
     -------
-    X_aligned : list of np.ndarray, each shape (n_features, n_times_total)
+    X_shared : list of np.ndarray, each shape (n_features, n_times_total)
+    srm      : fitted SRM instance (needed to access srm.w_ for test projection)
     """
-    # Initialize SRM
-    # n_iter: number of iterations to converge
     srm = SRM(n_iter=10, features=n_features)
-
-    # Fit the model and transform the data
-    # X_list should be a list where each element is (n_channels, n_samples)
     srm.fit(X_list)
-
-    # Transform each subject into the shared space
     X_shared = srm.transform(X_list)
-
-    return X_shared
+    return X_shared, srm
