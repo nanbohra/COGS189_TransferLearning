@@ -13,6 +13,7 @@ class SRM:
         self.n_iter = n_iter
         self.features = features
         self.w_ = None  # list of (n_ch, n_features) orthogonal bases
+        self._X_list = None
 
     def fit(self, X_list):
         n_subjects = len(X_list)
@@ -34,10 +35,32 @@ class SRM:
                 U, _, Vt = svd(M, full_matrices=False)
                 self.w_.append(U @ Vt)
 
+        self._X_list = X_list
         return self
 
     def transform(self, X_list):
         return [W.T @ X for W, X in zip(self.w_, X_list)]
+
+    def transform_new(self, X):
+        """
+        Project a new (unseen) subject into the shared space.
+        Estimates a W for the new subject using the learned shared response S,
+        without refitting SRM — so source subjects are not affected.
+        """
+        n_subjects = len(self._X_list)
+        S = sum(W.T @ X_i for W, X_i in zip(self.w_, self._X_list)) / n_subjects
+
+        # truncate X to match S's time dimension
+        t = min(X.shape[1], S.shape[1])
+        X_trunc = X[:, :t]
+        S_trunc = S[:, :t]
+
+        M = X_trunc @ S_trunc.T
+        U, _, Vt = svd(M, full_matrices=False)
+        W_new = U @ Vt
+
+        # project full X (not truncated) using estimated W
+        return W_new.T @ X, W_new
 
 
 def euclidean_alignment(X):
