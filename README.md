@@ -28,6 +28,9 @@ File: `alignment_methods.py`
 * Riemannian Alignment: normalizes each subject's epoch covariance using the Riemannian (geometric) mean of covariance matrices, then applies its inverse square root — geometrically correct for SPD matrices and typically improves cross-subject generalization
 * Shared Response Model: aligns subjects based on the functional timing of their neural activity by decomposing individual data into subject-specific basis matrices and a common response template
 
+## Pre-training and Fine-tuning
+File: `progressive_FT.ipynb`
+
 
 ## How to Run
 ### Install Libraries + Dependencies
