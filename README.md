@@ -31,6 +31,12 @@ File: `alignment_methods.py`
 ## Pre-training and Fine-tuning
 File: `progressive_FT.ipynb`
 
+* Runs baseline with leave-one-subject-out cross-validation on raw, epoched EEG data from 30 subjects with no alignment
+* Identifies 5 top performing subjects over the BCI-efficient minimum accuracy threshold of 70%
+* Runs progressive fine-tuning on BCI-efficient subjects by exposing pre-trained model to increasing amount of unseen subject data
+* Repeats progressive fine-tuning with EA, RA, and SRM preprocessing
+* Visualizes results
+
 
 ## How to Run
 ### Install Libraries + Dependencies
